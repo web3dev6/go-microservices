@@ -14,19 +14,21 @@ import (
 
 // go mod init github.com/satoshi-u/go-microservices
 // go run main.go
-// curl localhost:9090/ -d sarthak
-// curl localhost:9090/products | jq
+// curl -v localhost:9090 -d sarthak
+// curl localhost:9090 | jq
+// curl localhost:9090 -d '{"id": 1, "name": "tea", "description": "nice cup of tea", "price": 3.14, "sku": "010002"}'| jq
+// curl localhost:9090/1 -XPUT -d '{"name": "tea", "description": "nice cup of tea", "price": 3.14}'| jq
 func main() {
 	// logger dependency injection
 	l := log.New(os.Stdout, "product-api", log.LstdFlags)
 	// handler instantiate
-	hh := handlers.NewHello(l)
+	// hh := handlers.NewHello(l)
 	ph := handlers.NewProduct(l)
 
 	// new mux
 	sm := http.NewServeMux()
-	sm.Handle("/", hh)
-	sm.Handle("/products", ph)
+	// sm.Handle("/", hh)
+	sm.Handle("/", ph)
 
 	// new server- address, handler, tls, timeouts
 	s := &http.Server{

@@ -2,6 +2,7 @@ package data
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"time"
 )
@@ -27,14 +28,60 @@ type Products []*Product
 // this reduces allocations and the overheads of the service
 //
 // https://golang.org/pkg/encoding/json/#NewEncoder
+// Products ToJSON : when getting all products
 func (p *Products) ToJSON(w io.Writer) error {
 	e := json.NewEncoder(w)
 	return e.Encode(p)
 }
 
+// product FromJSON : when adding a product
+func (p *Product) FromJSON(r io.Reader) error {
+	d := json.NewDecoder(r)
+	return d.Decode(p)
+}
+
 // GetProducts returns a list of products
 func GetProducts() Products {
 	return productList
+}
+
+// AddProduct
+func AddProduct(p *Product) {
+	p.ID = getNextId()
+	productList = append(productList, p)
+}
+
+// UpdateProduct
+func UpdateProduct(id int, p *Product) error {
+	fp, pos, err := findProduct(id)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("id: %d\n", id)
+	fmt.Printf("Product: %#v\n", p)
+	if fp.ID == id {
+		p.ID = id
+		productList[pos] = p
+	}
+	return nil
+}
+
+// getNextId calculates ID for a new product to be added
+func getNextId() int {
+	lp := productList[len(productList)-1]
+	return lp.ID + 1
+}
+
+var ErrProductNotFound = fmt.Errorf("Product not found")
+
+// getNextId calculates ID for a new product to be added
+func findProduct(id int) (*Product, int, error) {
+	for i, p := range productList {
+		if p.ID == id {
+			return p, i, nil
+		}
+	}
+	return nil, -1, ErrProductNotFound
 }
 
 // productList is a hard coded list of products for this
