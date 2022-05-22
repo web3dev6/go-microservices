@@ -9,15 +9,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/satoshi-u/go-microservices/handlers"
 )
 
 // go mod init github.com/satoshi-u/go-microservices
 // go run main.go
-// curl -v localhost:9090 -d sarthak
+// curl -v  localhost:9090 -d sarthak
 // curl localhost:9090 | jq
-// curl localhost:9090 -d '{"id": 1, "name": "tea", "description": "nice cup of tea", "price": 3.14, "sku": "010002"}'| jq
-// curl localhost:9090/1 -XPUT -d '{"name": "tea", "description": "nice cup of tea", "price": 3.14}'| jq
+// curl localhost:9090 -d '{"id": 1, "name": "Indian Tea", "description": "nice cup of tea", "price": 3.14, "sku": "010002"}'| jq
+// curl localhost:9090/1 -XPUT -d '{"name": "Cappuccino", "description": "steamed milk foam", "price": 5.00, "sku": "abc123"}'| jq
 func main() {
 	// logger dependency injection
 	l := log.New(os.Stdout, "product-api", log.LstdFlags)
@@ -25,10 +26,23 @@ func main() {
 	// hh := handlers.NewHello(l)
 	ph := handlers.NewProduct(l)
 
-	// new mux
-	sm := http.NewServeMux()
+	// new std lib mux : create mux and register handlers
+	// sm := http.NewServeMux()
 	// sm.Handle("/", hh)
-	sm.Handle("/", ph)
+	// sm.Handle("/", ph)
+
+	// gorilla mux : create mux and register handlers
+	sm := mux.NewRouter()
+	getRouter := sm.Methods(http.MethodGet).Subrouter()
+	getRouter.HandleFunc("/", ph.GetProducts)
+
+	putRouter := sm.Methods(http.MethodPut).Subrouter()
+	putRouter.HandleFunc("/{id}", ph.UpdateProducts)
+	putRouter.Use(ph.MiddlewareValidateProduct)
+
+	postRouter := sm.Methods(http.MethodPost).Subrouter()
+	postRouter.HandleFunc("/", ph.AddProducts)
+	postRouter.Use(ph.MiddlewareValidateProduct)
 
 	// new server- address, handler, tls, timeouts
 	s := &http.Server{

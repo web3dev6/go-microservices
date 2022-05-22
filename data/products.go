@@ -57,8 +57,8 @@ func UpdateProduct(id int, p *Product) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("id: %d\n", id)
-	fmt.Printf("Product: %#v\n", p)
+	// fmt.Printf("id: %d\n", id)
+	// fmt.Printf("Product: %#v\n", p)
 	if fp.ID == id {
 		p.ID = id
 		productList[pos] = p
