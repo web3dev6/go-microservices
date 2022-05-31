@@ -16,9 +16,10 @@ import (
 // go mod init github.com/satoshi-u/go-microservices
 // go run main.go
 // curl -v  localhost:9090 -d sarthak
-// curl localhost:9090 | jq
-// curl localhost:9090 -d '{"id": 1, "name": "Indian Tea", "description": "nice cup of tea", "price": 3.14, "sku": "010002"}'| jq
-// curl localhost:9090/1 -XPUT -d '{"name": "Cappuccino", "description": "steamed milk foam", "price": 5.00, "sku": "abc123"}'| jq
+// GET     -> curl localhost:9090 | jq
+// POST    -> curl localhost:9090 -d '{"id": 3, "name": "Indian Tea", "description": "nice cup of tea", "price": 3.14, "sku": "prod-bev-003"}'| jq
+// PUT   	 -> curl localhost:9090/1 -XPUT -d '{"name": "Cappuccino", "description": "steamed milk foam", "price": 5.00, "sku": "prod-bev-001"}'| jq
+// POST(2) -> curl localhost:9090 -d '{"name": "coffee $1", "description": "cheap coffee", "price": 1.00, "sku": "prod-bev-004"}'| jq
 func main() {
 	// logger dependency injection
 	l := log.New(os.Stdout, "product-api", log.LstdFlags)
