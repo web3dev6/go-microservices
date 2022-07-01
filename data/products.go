@@ -28,7 +28,7 @@ func (p *Product) FromJSON(r io.Reader) error {
 	d := json.NewDecoder(r)
 	err := d.Decode(p)
 	if err != nil {
-		log.Printf("Unable to decode from Json for product with id{%d}, err: %v", p.ID, err)
+		log.Printf("[ERROR] Unable to decode from Json for product with id{%d}, err: %v", p.ID, err)
 		return err
 	}
 	return nil
@@ -39,7 +39,7 @@ func (p *Product) ToJSON(w io.Writer) error {
 	e := json.NewEncoder(w)
 	err := e.Encode(p)
 	if err != nil {
-		log.Printf("Unable to encode to Json for product with id{%d}, err: %v", p.ID, err)
+		log.Printf("[ERROR] Unable to encode to Json for product with id{%d}, err: %v", p.ID, err)
 		return err
 	}
 	return nil
@@ -49,7 +49,7 @@ func (p *Product) ToJSON(w io.Writer) error {
 func (p *Product) JsonMarshalProduct() ([]byte, error) {
 	product, err := json.Marshal(p)
 	if err != nil {
-		log.Printf("Unable to marshal to json for product with id{%d}, err: %v", p.ID, err)
+		log.Printf("[ERROR] Unable to marshal to json for product with id{%d}, err: %v", p.ID, err)
 		return nil, err
 	}
 	return product, nil
@@ -62,7 +62,7 @@ func (p *Product) Validate() error {
 	validate.RegisterValidation("sku", validateSKU)
 	err := validate.Struct(p)
 	if err != nil {
-		log.Printf("error in validation for product with id{%d}, err: %v", p.ID, err)
+		log.Printf("[ERROR] error in validation for product with id{%d}, err: %v", p.ID, err)
 		// validationErrors := err.(validator.ValidationErrors)
 		// log.Println("validationErrors: ", validationErrors)
 		return err
@@ -93,7 +93,7 @@ func (p *Products) ToJSON(w io.Writer) error {
 	e := json.NewEncoder(w)
 	err := e.Encode(p)
 	if err != nil {
-		log.Printf("Unable to encode to Json for Products, err: %v", err)
+		log.Printf("[ERROR] Unable to encode to Json for Products, err: %v", err)
 		return err
 	}
 	return nil
@@ -103,7 +103,7 @@ func (p *Products) ToJSON(w io.Writer) error {
 func (p *Products) JsonMarshalProducts() ([]byte, error) {
 	products, err := json.Marshal(p)
 	if err != nil {
-		log.Printf("Unable to marshal to json for products, err: %v", err)
+		log.Printf("[ERROR] Unable to marshal to json for products, err: %v", err)
 		return nil, err
 	}
 	return products, nil
@@ -143,7 +143,7 @@ func getNextId() int {
 
 var ErrProductNotFound = fmt.Errorf("Product not found")
 
-// getNextId calculates ID for a new product to be added
+// findProduct finds the product with given id
 func findProduct(id int) (*Product, int, error) {
 	for i, p := range productList {
 		if p.ID == id {

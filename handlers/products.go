@@ -20,7 +20,7 @@ func NewProduct(l *log.Logger) *Products {
 	return &Products{l}
 }
 
-// ServeHTTP - handler
+// ServeHTTP - handler **********************************************************************
 // func (p *Products) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 // 	// log Request
 // 	p.l.Println("Request received :::: Products Handler")
@@ -64,7 +64,7 @@ func NewProduct(l *log.Logger) *Products {
 // 	rw.WriteHeader(http.StatusMethodNotAllowed)
 // }
 
-// GetProducts
+// GetProducts **********************************************************************
 func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
 	p.l.Println("Handle Products GET ****** START ******")
 	// Getting products from data package
@@ -72,7 +72,7 @@ func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
 	// Marshal products list for readable logging and log
 	lpjson, _ := lp.JsonMarshalProducts()
 	p.l.Println("Products List: ", string(lpjson))
-	// marshall with json.Marshal
+	// Marshall with json.Marshal to send in ResponseWriter
 	// d, err := json.Marshal(lp)
 	// if err != nil {
 	// 	http.Error(rw, "Unable to marshal json", http.StatusInternalServerError)
@@ -82,14 +82,14 @@ func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
 	// Encoding with json.NewEncoder to send in ResponseWriter
 	err := lp.ToJSON(rw)
 	if err != nil {
-		p.l.Println("Unable to encode Products to json")
+		p.l.Println("[ERROR] Unable to encode Products to json")
 		http.Error(rw, "Unable to encode Products to json", http.StatusInternalServerError)
 		return
 	}
 	p.l.Println("Handle Products GET ****** END ******")
 }
 
-// AddProducts
+// AddProducts **********************************************************************
 func (p *Products) AddProducts(rw http.ResponseWriter, r *http.Request) {
 	p.l.Println("Handle Products POST ****** START ******")
 	// Getting product from r.Context as middleware would have run and decoded r.Body and put product in r.Context()
@@ -104,14 +104,14 @@ func (p *Products) AddProducts(rw http.ResponseWriter, r *http.Request) {
 	// rw.Write([]byte("Product Added successfully"))
 	err := product.ToJSON(rw)
 	if err != nil {
-		p.l.Println("Unable to encode Product to json")
+		p.l.Println("[ERROR] Unable to encode Product to json")
 		http.Error(rw, "Unable to encode Product to json", http.StatusInternalServerError)
 		return
 	}
 	p.l.Println("Handle Products POST ****** END ******")
 }
 
-// UpdateProducts
+// UpdateProducts **********************************************************************
 func (p *Products) UpdateProducts(rw http.ResponseWriter, r *http.Request) {
 	p.l.Println("Handle Products PUT ****** START ******")
 	// Getting id from URI using gorilla mux vars
@@ -119,7 +119,7 @@ func (p *Products) UpdateProducts(rw http.ResponseWriter, r *http.Request) {
 	// p.l.Println("mux.Vars PUT Products", vars)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		p.l.Println("Unable to convert id from string to int")
+		p.l.Println("[ERROR] Unable to convert id from string to int")
 		http.Error(rw, "Unable to convert id from string to int", http.StatusBadRequest)
 		return
 	}
@@ -130,12 +130,12 @@ func (p *Products) UpdateProducts(rw http.ResponseWriter, r *http.Request) {
 	// UpdateProduct func in package data(acts as DAL)
 	product, err := data.UpdateProduct(id, productInfo)
 	if err == data.ErrProductNotFound {
-		p.l.Println("Product Not Found for id: ", id)
+		p.l.Println("[ERROR] Product Not Found for id: ", id)
 		http.Error(rw, fmt.Sprintf("Product Not Found for id: %d", id), http.StatusNotFound)
 		return
 	}
 	if err != nil {
-		p.l.Println("Internal server error in updating Products for id", id)
+		p.l.Println("[ERROR] Internal server error in updating Products for id", id)
 		http.Error(rw, fmt.Sprintf("Internal server error in updating Products for id: %d", id), http.StatusInternalServerError)
 		return
 	}
@@ -146,7 +146,7 @@ func (p *Products) UpdateProducts(rw http.ResponseWriter, r *http.Request) {
 	// rw.Write([]byte("Product Updated successfully"))
 	err = product.ToJSON(rw)
 	if err != nil {
-		p.l.Println("Unable to encode Product to json")
+		p.l.Println("[ERROR] Unable to encode Product to json")
 		http.Error(rw, "Unable to encode Product to json", http.StatusInternalServerError)
 		return
 	}
@@ -156,10 +156,11 @@ func (p *Products) UpdateProducts(rw http.ResponseWriter, r *http.Request) {
 // KeyProduct to use as key when putting Product to r.Context()
 type KeyProduct struct{}
 
-// MiddlewareValidateProduct : validates/extracts Product from r.Body(Json) and puts in r.Context before handler code runs for a route
+// MiddlewareValidateProduct **********************************************************************
+// validates/extracts Product from r.Body(Json) and puts in r.Context before handler code runs for a route
 func (p *Products) MiddlewareValidateProduct(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		p.l.Println("MiddlewareValidateProduct:- *Extracting Product from r.Body POST|PUT")
+		p.l.Println("MiddlewareValidateProduct:- *Extracting Product Info from r.Body POST|PUT")
 		product := &data.Product{}
 		// Decode productInfo from r.Body(Json)
 		err := product.FromJSON(r.Body)
