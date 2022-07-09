@@ -18,6 +18,9 @@ import (
 // AddProducts handles POST requests to add new products
 func (p *Products) AddProducts(rw http.ResponseWriter, r *http.Request) {
 	p.l.Println("[DEBUG] Handle Products POST ****** START ******")
+	// As per swagger docs, header resp type : application/json
+	rw.Header().Add("Content-Type", "application/json")
+
 	// Getting product from r.Context as middleware would have run and decoded r.Body and put product in r.Context()
 	// note *** cast returned interface to data.Product
 	product := r.Context().Value(KeyProduct{}).(*data.Product)
@@ -32,8 +35,6 @@ func (p *Products) AddProducts(rw http.ResponseWriter, r *http.Request) {
 	// Encoding with json.NewEncoder to send in ResponseWriter
 	// rw.Write([]byte("Product Added successfully"))
 
-	// As per swagger docs, header resp type : application/json
-	rw.Header().Add("Content-Type", "application/json")
 	// encode product to json
 	err := product.ToJSON(rw)
 	if err != nil {

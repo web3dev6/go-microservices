@@ -19,9 +19,16 @@ import (
 // DeleteProducts handles DELETE requests and deletes products from the database
 func (p *Products) DeleteProducts(rw http.ResponseWriter, r *http.Request) {
 	p.l.Println("[DEBUG] Handle Products DELETE ****** START ******")
+	// As per swagger docs, header resp type : application/json
+	rw.Header().Add("Content-Type", "application/json")
+
 	// get product id from request url
 	p.l.Println("[DEBUG] Getting product Id from url")
 	id := getProductID(rw, r)
+	if id == -1 {
+		return
+	}
+
 	p.l.Println("[DEBUG] Deleting in Products for id: ", id)
 
 	// DeleteProduct func in package data(acts as DAL)

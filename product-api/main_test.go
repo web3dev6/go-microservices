@@ -9,6 +9,9 @@ import (
 	"github.com/satoshi-u/go-microservices/sdk/models"
 )
 
+// To clean test-cache, run : go clean -testcache
+// todo: all err cases, tested with curl, need to add test-funcs here as well
+
 func TestClientForGetProducts(t *testing.T) {
 	// c := client.Default
 	cfg := client.DefaultTransportConfig().WithHost("localhost:9090")

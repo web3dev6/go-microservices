@@ -179,7 +179,7 @@ var ErrProductNotFound = fmt.Errorf("Product not found")
 // If a product is not found this function returns a ProductNotFound error
 func GetProductByID(id int) (*Product, error) {
 	i := findIndexByProductID(id)
-	if id == -1 {
+	if i == -1 {
 		return nil, ErrProductNotFound
 	}
 	return productList[i], nil
@@ -203,7 +203,6 @@ func findIndexByProductID(id int) int {
 			return i
 		}
 	}
-
 	return -1
 }
 

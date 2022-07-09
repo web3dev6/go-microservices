@@ -11,6 +11,9 @@ import (
 func (p *Products) MiddlewareValidateProduct(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		p.l.Println("[DEBUG] MiddlewareValidateProduct:- *Extracting Product from r.Body POST|PUT")
+		// As per swagger docs, header resp type : application/json
+		rw.Header().Add("Content-Type", "application/json")
+
 		product := &data.Product{}
 
 		// Decode product from r.Body(Json)
@@ -32,7 +35,7 @@ func (p *Products) MiddlewareValidateProduct(next http.Handler) http.Handler {
 		// }
 		errs := p.v.Validate(product)
 		if errs != nil {
-			p.l.Println("[ERROR] validating product in middleware", err)
+			p.l.Println("[ERROR] validating product in middleware", errs)
 			// return the validation messages as an array
 			rw.WriteHeader(http.StatusUnprocessableEntity)
 			// write err to rw using data.ToJSON

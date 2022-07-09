@@ -17,6 +17,9 @@ import (
 // GetProducts handles GET requests and returns all current products
 func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
 	p.l.Println("[DEBUG] Handle Products GET ****** START ******")
+	// As per swagger docs, header resp type : application/json
+	rw.Header().Add("Content-Type", "application/json")
+
 	// Getting products from data package
 	prods := data.GetProducts()
 
@@ -32,8 +35,6 @@ func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
 	// }
 	// rw.Write(d)
 
-	// As per swagger docs, header resp type : application/json
-	rw.Header().Add("Content-Type", "application/json")
 	// Encoding with json.NewEncoder to send in ResponseWriter
 	err := prods.ToJSON(rw)
 	if err != nil {
@@ -59,9 +60,15 @@ func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
 // GetProduct handles GET requests to return a specific product by Id
 func (p *Products) GetProduct(rw http.ResponseWriter, r *http.Request) {
 	p.l.Println("[DEBUG] Handle Products GET ****** START ******")
+	// As per swagger docs, header resp type : application/json
+	rw.Header().Add("Content-Type", "application/json")
+
 	// get product id from request url
 	p.l.Println("[DEBUG] Getting product Id from url")
 	id := getProductID(rw, r)
+	if id == -1 {
+		return
+	}
 
 	// get product from db
 	p.l.Println("[DEBUG] Getting Product with id: ", id)
@@ -86,8 +93,6 @@ func (p *Products) GetProduct(rw http.ResponseWriter, r *http.Request) {
 	prodJson, _ := prod.JsonMarshalProduct()
 	p.l.Println("[DEBUG] Product: ", string(prodJson))
 
-	// As per swagger docs, header resp type : application/json
-	rw.Header().Add("Content-Type", "application/json")
 	// write to rw using data.ToJSON
 	err = data.ToJSON(prod, rw)
 	if err != nil {
