@@ -5,22 +5,40 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"regexp"
-	"time"
-
-	"github.com/go-playground/validator/v10"
 )
 
 // Product defines the structure for an API product
+// swagger:model
 type Product struct {
-	ID          int     `json:"id"`
-	Name        string  `json:"name" validate:"required"`
-	Description string  `json:"description"`
-	Price       float32 `json:"price" validate:"gt=0"`
-	SKU         string  `json:"sku" validate:"required,sku"`
-	CreatedOn   string  `json:"-"`
-	UpdatedOn   string  `json:"-"`
-	DeletedOn   string  `json:"-"`
+	// the id for the product
+	//
+	// required: false
+	// min: 1
+	ID int `json:"id"` // Unique identifier for the product
+
+	// the name for this poduct
+	//
+	// required: true
+	// max length: 255
+	Name string `json:"name" validate:"required"`
+
+	// the description for this poduct
+	//
+	// required: false
+	// max length: 10000
+	Description string `json:"description"`
+
+	// the price for the product
+	//
+	// required: true
+	// min: 0.01
+	Price float32 `json:"price" validate:"required,gt=0"`
+
+	// the SKU for the product
+	//
+	// required: true
+	// pattern: [a-z]+-[a-z]+-[a-z]+
+	SKU string `json:"sku" validate:"sku"`
 }
 
 // FromJSON : when adding/updating a product, used in MiddlewareValidateProduct
@@ -56,28 +74,28 @@ func (p *Product) JsonMarshalProduct() ([]byte, error) {
 }
 
 // Validate : when adding/updating a product, used in MiddlewareValidateProduct
-func (p *Product) Validate() error {
-	log.Println("Validate:- *Validating Product from r.Body **POST|PUT")
-	validate := validator.New()
-	validate.RegisterValidation("sku", validateSKU)
-	err := validate.Struct(p)
-	if err != nil {
-		log.Printf("[ERROR] error in validation for product with id{%d}, err: %v", p.ID, err)
-		// validationErrors := err.(validator.ValidationErrors)
-		// log.Println("validationErrors: ", validationErrors)
-		return err
-	}
-	return nil
-	// return validate.Struct(p)
-}
+// func (p *Product) Validate() error {
+// 	log.Println("Validate:- *Validating Product from r.Body **POST|PUT")
+// 	validate := validator.New()
+// 	validate.RegisterValidation("sku", validateSKU)
+// 	err := validate.Struct(p)
+// 	if err != nil {
+// 		log.Printf("[ERROR] error in validation for product with id{%d}, err: %v", p.ID, err)
+// 		// validationErrors := err.(validator.ValidationErrors)
+// 		// log.Println("validationErrors: ", validationErrors)
+// 		return err
+// 	}
+// 	return nil
+// 	// return validate.Struct(p)
+// }
 
 // validateSKU : custom validation for sku field with regex
-func validateSKU(fl validator.FieldLevel) bool {
-	// sku is of format abc-asdf-1234
-	regex := regexp.MustCompile(`[a-z]+-[a-z]+-[0-9]+`)
-	matches := regex.FindAllString(fl.Field().String(), -1)
-	return len(matches) == 1
-}
+// func validateSKU(fl validator.FieldLevel) bool {
+// 	// sku is of format abc-asdf-1234
+// 	regex := regexp.MustCompile(`[a-z]+-[a-z]+-[0-9]+`)
+// 	matches := regex.FindAllString(fl.Field().String(), -1)
+// 	return len(matches) == 1
+// }
 
 // Products is a collection of Product
 type Products []*Product
@@ -115,24 +133,37 @@ func GetProducts() Products {
 }
 
 // AddProduct adds a product to list(no err expected for now)
-func AddProduct(p *Product) {
+func AddProduct(p *Product) *Product {
 	p.ID = getNextId()
 	productList = append(productList, p)
+	return p
 }
 
 // UpdateProduct updates an existing product in list
-func UpdateProduct(id int, pInfo *Product) (*Product, error) {
-	fp, pos, err := findProduct(id)
-	if err != nil {
-		return nil, err
+func UpdateProduct(p *Product) (*Product, error) {
+	i := findIndexByProductID(p.ID)
+	if i == -1 {
+		return nil, ErrProductNotFound
 	}
-	// fmt.Printf("id: %d\n", id)
-	// fmt.Printf("Product: %#v\n", p)
-	if fp.ID == id {
-		pInfo.ID = id
-		productList[pos] = pInfo
+	// update product in db
+	productList[i] = p
+	return p, nil
+}
+
+// DeleteProduct deletes a product from the database
+func DeleteProduct(id int) (*Product, error) {
+	i := findIndexByProductID(id)
+	// log.Printf("[DEBUG] ************************** i : %v", i)
+	if i == -1 {
+		return nil, ErrProductNotFound
 	}
-	return pInfo, nil
+	pdel := productList[i]
+	// Remove the product at index i from productList.
+	copy(productList[i:], productList[i+1:])       // Shift productList[i+1:] left one index.
+	productList[len(productList)-1] = nil          // Erase last element (write zero value).
+	productList = productList[:len(productList)-1] // Truncate slice.
+	// return deleted product
+	return pdel, nil
 }
 
 // getNextId calculates ID for a new product to be added
@@ -143,14 +174,37 @@ func getNextId() int {
 
 var ErrProductNotFound = fmt.Errorf("Product not found")
 
+// GetProductByID returns a single product which matches the id from the
+// database.
+// If a product is not found this function returns a ProductNotFound error
+func GetProductByID(id int) (*Product, error) {
+	i := findIndexByProductID(id)
+	if id == -1 {
+		return nil, ErrProductNotFound
+	}
+	return productList[i], nil
+}
+
 // findProduct finds the product with given id
-func findProduct(id int) (*Product, int, error) {
+// func findProduct(id int) (*Product, int, error) {
+// 	for i, p := range productList {
+// 		if p.ID == id {
+// 			return p, i, nil
+// 		}
+// 	}
+// 	return nil, -1, ErrProductNotFound
+// }
+
+// findIndex finds the index of a product in the database
+// returns -1 when no product can be found
+func findIndexByProductID(id int) int {
 	for i, p := range productList {
 		if p.ID == id {
-			return p, i, nil
+			return i
 		}
 	}
-	return nil, -1, ErrProductNotFound
+
+	return -1
 }
 
 // productList is a hard coded list of products for this
@@ -162,8 +216,6 @@ var productList = Products{
 		Description: "Frothy milky coffee",
 		Price:       2.45,
 		SKU:         "prod-bev-001",
-		CreatedOn:   time.Now().UTC().String(),
-		UpdatedOn:   time.Now().UTC().String(),
 	},
 	{
 		ID:          2,
@@ -171,7 +223,5 @@ var productList = Products{
 		Description: "Short and strong coffee without milk",
 		Price:       1.99,
 		SKU:         "prod-bev-002",
-		CreatedOn:   time.Now().UTC().String(),
-		UpdatedOn:   time.Now().UTC().String(),
 	},
 }

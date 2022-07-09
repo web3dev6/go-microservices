@@ -9,41 +9,56 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-openapi/runtime/middleware"
 	"github.com/gorilla/mux"
+	"github.com/satoshi-u/go-microservices/data"
 	"github.com/satoshi-u/go-microservices/handlers"
 )
 
 // go mod init github.com/satoshi-u/go-microservices
 // go run main.go
-// curl -v  localhost:9090 -d sarthak
-// GET     -> curl localhost:9090 | jq
-// POST    -> curl localhost:9090 -d '{"name": "Indian Tea", "description": "nice cup of tea", "price": 3.14, "sku": "prod-bev-003"}'| jq
-// PUT   	 -> curl localhost:9090/1 -XPUT -d '{"name": "Cappuccino", "description": "steamed milk foam", "price": 5.00, "sku": "prod-bev-001"}'| jq
-// POST(2) -> curl localhost:9090 -d '{"name": "coffee $1", "description": "cheap coffee", "price": 1.00, "sku": "prod-bev-004"}'| jq
+// hello   -> curl -v localhost:9090 -d sarthak
+// GET     -> curl localhost:9090/products | jq
+// GET/{id}-> curl localhost:9090/products/2 | jq
+// POST    -> curl localhost:9090/products -d '{"name": "Indian Tea", "description": "nice cup of tea", "price": 3.14, "sku": "prod-bev-003"}'| jq
+// POST    -> curl localhost:9090/products -d '{"name": "coffee $1", "description": "cheap coffee", "price": 1.00, "sku": "prod-bev-004"}'| jq
+// PUT   	 -> curl localhost:9090/products -XPUT -d '{"id": 1, "name": "Cappuccino", "description": "steamed milk foam", "price": 5.00, "sku": "prod-bev-001"}'| jq
+// DELETE  -> curl localhost:9090/products/2 -XDELETE | jq
 func main() {
 	// logger dependency injection
 	l := log.New(os.Stdout, "product-api", log.LstdFlags)
+	v := data.NewValidation()
 	// handler instantiate
 	// hh := handlers.NewHello(l)
-	ph := handlers.NewProduct(l)
+	ph := handlers.NewProducts(l, v)
 
 	// new std lib mux : create mux and register handlers
 	// sm := http.NewServeMux()
 	// sm.Handle("/", hh)
 	// sm.Handle("/", ph)
 
-	// gorilla mux : create mux and register handlers
+	// gorilla mux : create mux and register GET|POST|PUT|DELETE handlers
 	sm := mux.NewRouter()
 	getRouter := sm.Methods(http.MethodGet).Subrouter()
-	getRouter.HandleFunc("/", ph.GetProducts)
+	getRouter.HandleFunc("/products", ph.GetProducts)
+	getRouter.HandleFunc("/products/{id}", ph.GetProduct)
 
 	putRouter := sm.Methods(http.MethodPut).Subrouter()
-	putRouter.HandleFunc("/{id}", ph.UpdateProducts)
+	putRouter.HandleFunc("/products", ph.UpdateProducts)
 	putRouter.Use(ph.MiddlewareValidateProduct)
 
 	postRouter := sm.Methods(http.MethodPost).Subrouter()
-	postRouter.HandleFunc("/", ph.AddProducts)
+	postRouter.HandleFunc("/products", ph.AddProducts)
 	postRouter.Use(ph.MiddlewareValidateProduct)
+
+	deleteRouter := sm.Methods(http.MethodDelete).Subrouter()
+	deleteRouter.HandleFunc("/products/{id}", ph.DeleteProducts)
+
+	// ReDocs- Swagger
+	opts := middleware.RedocOpts{SpecURL: "/swagger.yaml"}
+	sh := middleware.Redoc(opts, nil)
+	getRouter.HandleFunc("/docs", sh.ServeHTTP)
+	getRouter.HandleFunc("/swagger.yaml", http.FileServer(http.Dir("./")).ServeHTTP)
 
 	// new server- address, handler, tls, timeouts
 	s := &http.Server{
