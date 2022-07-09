@@ -11,8 +11,9 @@ import (
 //
 // responses:
 //	200: productResponse
+//  400: errorResponse
 //  422: errorValidation
-//  501: errorResponse
+//  500: errorResponse
 
 // AddProducts handles POST requests to add new products
 func (p *Products) AddProducts(rw http.ResponseWriter, r *http.Request) {
@@ -30,10 +31,15 @@ func (p *Products) AddProducts(rw http.ResponseWriter, r *http.Request) {
 
 	// Encoding with json.NewEncoder to send in ResponseWriter
 	// rw.Write([]byte("Product Added successfully"))
+
+	// As per swagger docs, header resp type : application/json
+	rw.Header().Add("Content-Type", "application/json")
+	// encode product to json
 	err := product.ToJSON(rw)
 	if err != nil {
 		p.l.Println("[ERROR] Unable to encode Product to json")
-		http.Error(rw, "Unable to encode Product to json", http.StatusInternalServerError)
+		rw.WriteHeader(http.StatusInternalServerError)
+		data.ToJSON(&GenericError{Message: err.Error()}, rw)
 		return
 	}
 	p.l.Println("[DEBUG] Handle Products POST ****** END ******")

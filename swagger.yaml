@@ -69,6 +69,8 @@ paths:
       responses:
         "200":
           $ref: '#/responses/productsResponse'
+        "500":
+          $ref: '#/responses/errorResponse'
       tags:
       - products
     post:
@@ -86,9 +88,11 @@ paths:
       responses:
         "200":
           $ref: '#/responses/productResponse'
+        "400":
+          $ref: '#/responses/errorResponse'
         "422":
           $ref: '#/responses/errorValidation'
-        "501":
+        "500":
           $ref: '#/responses/errorResponse'
       tags:
       - products
@@ -105,8 +109,10 @@ paths:
         schema:
           $ref: '#/definitions/Product'
       responses:
-        "201":
+        "204":
           $ref: '#/responses/noContentResponse'
+        "400":
+          $ref: '#/responses/errorResponse'
         "404":
           $ref: '#/responses/errorResponse'
         "422":
@@ -126,21 +132,35 @@ paths:
         type: integer
         x-go-name: ID
       responses:
-        "201":
+        "204":
           $ref: '#/responses/noContentResponse'
+        "400":
+          $ref: '#/responses/errorResponse'
         "404":
           $ref: '#/responses/errorResponse'
-        "501":
+        "500":
           $ref: '#/responses/errorResponse'
       tags:
       - products
     get:
       description: Returns the product with given id from db
       operationId: getProduct
+      parameters:
+      - description: The id of the product for which the operation relates
+        format: int64
+        in: path
+        name: id
+        required: true
+        type: integer
+        x-go-name: ID
       responses:
         "200":
           $ref: '#/responses/productResponse'
+        "400":
+          $ref: '#/responses/errorResponse'
         "404":
+          $ref: '#/responses/errorResponse'
+        "500":
           $ref: '#/responses/errorResponse'
       tags:
       - products

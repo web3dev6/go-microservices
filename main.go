@@ -18,12 +18,12 @@ import (
 // go mod init github.com/satoshi-u/go-microservices
 // go run main.go
 // hello   -> curl -v localhost:9090 -d sarthak
-// GET     -> curl localhost:9090/products | jq
-// GET/{id}-> curl localhost:9090/products/2 | jq
-// POST    -> curl localhost:9090/products -d '{"name": "Indian Tea", "description": "nice cup of tea", "price": 3.14, "sku": "prod-bev-003"}'| jq
-// POST    -> curl localhost:9090/products -d '{"name": "coffee $1", "description": "cheap coffee", "price": 1.00, "sku": "prod-bev-004"}'| jq
-// PUT   	 -> curl localhost:9090/products -XPUT -d '{"id": 1, "name": "Cappuccino", "description": "steamed milk foam", "price": 5.00, "sku": "prod-bev-001"}'| jq
-// DELETE  -> curl localhost:9090/products/2 -XDELETE | jq
+// GET     -> curl -v localhost:9090/products | jq
+// GET/{id}-> curl -v localhost:9090/products/2 | jq
+// POST    -> curl -v localhost:9090/products -d '{"name": "Indian Tea", "description": "nice cup of tea", "price": 3.14, "sku": "prod-bev-003"}'| jq
+// POST    -> curl -v localhost:9090/products -d '{"name": "coffee $1", "description": "cheap coffee", "price": 1.00, "sku": "prod-bev-004"}'| jq
+// PUT   	 -> curl -v localhost:9090/products -XPUT -d '{"id": 1, "name": "Cappuccino", "description": "steamed milk foam", "price": 5.00, "sku": "prod-bev-001"}'| jq
+// DELETE  -> curl -v localhost:9090/products/4 -XDELETE | jq
 func main() {
 	// logger dependency injection
 	l := log.New(os.Stdout, "product-api", log.LstdFlags)

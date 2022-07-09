@@ -12,6 +12,7 @@ import (
 //
 //     Responses:
 //       200: productsResponse
+//       500: errorResponse
 
 // GetProducts handles GET requests and returns all current products
 func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
@@ -31,11 +32,14 @@ func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
 	// }
 	// rw.Write(d)
 
+	// As per swagger docs, header resp type : application/json
+	rw.Header().Add("Content-Type", "application/json")
 	// Encoding with json.NewEncoder to send in ResponseWriter
 	err := prods.ToJSON(rw)
 	if err != nil {
 		p.l.Println("[ERROR] Unable to encode Products to json")
-		http.Error(rw, "Unable to encode Products to json", http.StatusInternalServerError)
+		rw.WriteHeader(http.StatusInternalServerError)
+		data.ToJSON(&GenericError{Message: err.Error()}, rw)
 		return
 	}
 	p.l.Println("[DEBUG] Handle Products GET ****** END ******")
@@ -48,7 +52,9 @@ func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
 //
 //     Responses:
 //       200: productResponse
+//       400: errorResponse
 //       404: errorResponse
+//       500: errorResponse
 
 // GetProduct handles GET requests to return a specific product by Id
 func (p *Products) GetProduct(rw http.ResponseWriter, r *http.Request) {
@@ -80,11 +86,14 @@ func (p *Products) GetProduct(rw http.ResponseWriter, r *http.Request) {
 	prodJson, _ := prod.JsonMarshalProduct()
 	p.l.Println("[DEBUG] Product: ", string(prodJson))
 
+	// As per swagger docs, header resp type : application/json
+	rw.Header().Add("Content-Type", "application/json")
 	// write to rw using data.ToJSON
 	err = data.ToJSON(prod, rw)
 	if err != nil {
 		p.l.Println("[ERROR] serializing product to response", err)
-		http.Error(rw, "Unable to serialize Product to Json", http.StatusInternalServerError)
+		rw.WriteHeader(http.StatusInternalServerError)
+		data.ToJSON(&GenericError{Message: err.Error()}, rw)
 		return
 	}
 	p.l.Println("[DEBUG] Handle Products GET ****** END ******")

@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/satoshi-u/go-microservices/data"
 )
 
 // getProductID returns the product ID from the URL
@@ -21,7 +22,8 @@ func getProductID(rw http.ResponseWriter, r *http.Request) int {
 		// should never happen
 		// panic(err)
 		log.Println("[ERROR] Unable to convert id from string to int")
-		http.Error(rw, "Unable to convert id from string to int", http.StatusBadRequest)
+		rw.WriteHeader(http.StatusBadRequest)
+		data.ToJSON(&GenericError{Message: err.Error()}, rw)
 		return -1
 	}
 	return id

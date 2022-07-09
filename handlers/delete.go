@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/satoshi-u/go-microservices/data"
@@ -12,9 +11,10 @@ import (
 // Deletes a product from the database
 //
 //     Responses:
-//       201: noContentResponse
+//	     204: noContentResponse
+//       400: errorResponse
 //       404: errorResponse
-//       501: errorResponse
+//       500: errorResponse
 
 // DeleteProducts handles DELETE requests and deletes products from the database
 func (p *Products) DeleteProducts(rw http.ResponseWriter, r *http.Request) {
@@ -28,12 +28,14 @@ func (p *Products) DeleteProducts(rw http.ResponseWriter, r *http.Request) {
 	product, err := data.DeleteProduct(id)
 	if err == data.ErrProductNotFound {
 		p.l.Println("[ERROR] Product Not Found for id: ", id)
-		http.Error(rw, fmt.Sprintf("Product Not Found for id: %d", id), http.StatusNotFound)
+		rw.WriteHeader(http.StatusNotFound)
+		data.ToJSON(&GenericError{Message: err.Error()}, rw)
 		return
 	}
 	if err != nil {
 		p.l.Println("[ERROR] Internal server error in deleting in Products for id", id)
-		http.Error(rw, fmt.Sprintf("Internal server error in deleting in Products for id: %d", id), http.StatusInternalServerError)
+		rw.WriteHeader(http.StatusInternalServerError)
+		data.ToJSON(&GenericError{Message: err.Error()}, rw)
 		return
 	}
 
@@ -43,12 +45,9 @@ func (p *Products) DeleteProducts(rw http.ResponseWriter, r *http.Request) {
 
 	// Encoding deletedProduct with json.NewEncoder to send in ResponseWriter
 	// rw.Write([]byte("Product Deleted successfully"))
-	err = product.ToJSON(rw)
-	if err != nil {
-		p.l.Println("[ERROR] Unable to encode Product to json")
-		http.Error(rw, "Unable to encode Product to json", http.StatusInternalServerError)
-		return
-	}
+	// write the no content success header
+	rw.WriteHeader(http.StatusNoContent)
+
 	p.l.Println("[DEBUG] Handle Products DELETE ****** END ******")
 	p.l.Println("------------------------------------------------")
 }

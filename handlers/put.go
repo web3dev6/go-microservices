@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/satoshi-u/go-microservices/data"
@@ -11,7 +10,8 @@ import (
 // Update a products details
 //
 // responses:
-//	201: noContentResponse
+//	204: noContentResponse
+//  400: errorResponse
 //  404: errorResponse
 //  422: errorValidation
 
@@ -26,7 +26,8 @@ func (p *Products) UpdateProducts(rw http.ResponseWriter, r *http.Request) {
 	product, err := data.UpdateProduct(prod)
 	if err == data.ErrProductNotFound {
 		p.l.Println("[ERROR] Product Not Found for id: ", prod.ID)
-		http.Error(rw, fmt.Sprintf("Product Not Found for id: %d", prod.ID), http.StatusNotFound)
+		rw.WriteHeader(http.StatusNotFound)
+		data.ToJSON(&GenericError{Message: err.Error()}, rw)
 		return
 	}
 

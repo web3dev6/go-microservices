@@ -17,7 +17,8 @@ func (p *Products) MiddlewareValidateProduct(next http.Handler) http.Handler {
 		err := product.FromJSON(r.Body)
 		if err != nil {
 			p.l.Println("[ERROR] deserializing product from r.Body in middleware", err)
-			http.Error(rw, "Unable to unmarshal json to Product", http.StatusBadRequest)
+			rw.WriteHeader(http.StatusBadRequest)
+			data.ToJSON(&GenericError{Message: err.Error()}, rw)
 			return
 		}
 		p.l.Printf("[DEBUG] Product from r.Body: %#v", product)
