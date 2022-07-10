@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-openapi/runtime/middleware"
+	gorHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/satoshi-u/go-microservices/data"
 	"github.com/satoshi-u/go-microservices/handlers"
@@ -60,10 +61,13 @@ func main() {
 	getRouter.HandleFunc("/docs", sh.ServeHTTP)
 	getRouter.HandleFunc("/swagger.yaml", http.FileServer(http.Dir("./")).ServeHTTP)
 
+	// CORS
+	cors := gorHandlers.CORS(gorHandlers.AllowedOrigins([]string{"http://localhost:3000"})) // "http://localhost:3000"   *
+
 	// new server- address, handler, tls, timeouts
 	s := &http.Server{
 		Addr:         ":9090",
-		Handler:      sm,
+		Handler:      cors(sm),
 		IdleTimeout:  120 * time.Second,
 		ReadTimeout:  1 * time.Second,
 		WriteTimeout: 1 * time.Second,
