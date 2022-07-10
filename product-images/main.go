@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	gorHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	hclog "github.com/hashicorp/go-hclog"
 	"github.com/nicholasjackson/env"
@@ -15,7 +16,7 @@ import (
 	"github.com/satoshi-u/go-microservices/product-images/handlers"
 )
 
-var bindAddress = env.String("BIND_ADDRESS", false, ":9090", "Bind address for the server")
+var bindAddress = env.String("BIND_ADDRESS", false, ":9091", "Bind address for the server")
 var logLevel = env.String("LOG_LEVEL", false, "debug", "Log output level for the server [debug, info, trace]")
 var basePath = env.String("BASE_PATH", false, "./imagestore", "Base path to save images")
 
@@ -42,30 +43,34 @@ func main() {
 	}
 
 	// create the handlers
-	fh := handlers.NewFiles(stor, l)
+	filesHandler := handlers.NewFiles(stor, l)
 
 	// create a new serve mux and register the handlers
 	sm := mux.NewRouter()
 
 	// post files
-	// CURL : curl -v localhost:9090/images/1/meowfilename.png -d @meow.png
+	// CURL : curl -v localhost:9091/images/1/meowfilename.png -d @meow.png
 	// filename regex: {filename:[a-zA-Z]+\\.[a-z]{3}}
 	// problem with FileServer is that it is dumb
-	ph := sm.Methods(http.MethodPost).Subrouter()
-	ph.HandleFunc("/images/{id:[0-9]+}/{filename:[a-zA-Z]+\\.[a-z]{3}}", fh.ServeHTTP)
+	putR := sm.Methods(http.MethodPost).Subrouter()
+	putR.HandleFunc("/images/{id:[0-9]+}/{filename:[a-zA-Z]+\\.[a-z]{3}}", filesHandler.UploadREST)
+	putR.HandleFunc("/", filesHandler.UploadMultipart)
 
 	// get files
-	// CURL : curl -v localhost:9090/images/1/meowfilename.png
-	gh := sm.Methods(http.MethodGet).Subrouter()
-	gh.Handle(
+	// CURL : curl -v localhost:9091/images/1/meowfilename.png
+	getR := sm.Methods(http.MethodGet).Subrouter()
+	getR.Handle(
 		"/images/{id:[0-9]+}/{filename:[a-zA-Z]+\\.[a-z]{3}}",
 		http.StripPrefix("/images/", http.FileServer(http.Dir(*basePath))),
 	)
 
+	// CORS
+	cors := gorHandlers.CORS(gorHandlers.AllowedOrigins([]string{"http://localhost:3000"})) // "http://localhost:3000"   *
+
 	// create a new server
 	s := http.Server{
 		Addr:         *bindAddress,      // configure the bind address
-		Handler:      sm,                // set the default handler
+		Handler:      cors(sm),          // set the default handler
 		ErrorLog:     sl,                // the logger for the server
 		ReadTimeout:  5 * time.Second,   // max time to read request from the client
 		WriteTimeout: 10 * time.Second,  // max time to write response to the client
