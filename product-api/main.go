@@ -25,6 +25,9 @@ import (
 // POST    -> curl -v localhost:9090/products -d '{"name": "coffee $1", "description": "cheap coffee", "price": 1.00, "sku": "prod-bev-004"}'| jq
 // PUT   	 -> curl -v localhost:9090/products -XPUT -d '{"id": 1, "name": "Cappuccino", "description": "steamed milk foam", "price": 5.00, "sku": "prod-bev-001"}'| jq
 // DELETE  -> curl -v localhost:9090/products/4 -XDELETE | jq
+
+// create swagger.yaml       -> make swagger
+// codegen from swagger.yaml -> swagger generate client -f ../swagger.yaml -A product-api
 func main() {
 	// logger dependency injection
 	l := log.New(os.Stdout, "product-api", log.LstdFlags)
