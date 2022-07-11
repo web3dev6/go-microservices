@@ -33,7 +33,15 @@ func (f *Files) UploadREST(rw http.ResponseWriter, r *http.Request) {
 	// no need to check for invalid id or filename as the mux router will not send requests
 	// here unless they have the correct parameters
 
+	// frc, err := r.GetBody()
+	// if err != nil {
+	// 	f.log.Error("Bad Request", "error", err)
+	// 	http.Error(rw, "expected a file in body", http.StatusBadRequest)
+	// 	return
+	// }
+
 	f.saveFile(id, fn, rw, r.Body)
+	r.Body.Close()
 }
 
 // UploadMultipart

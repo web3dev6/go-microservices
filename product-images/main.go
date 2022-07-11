@@ -42,27 +42,32 @@ func main() {
 		os.Exit(1)
 	}
 
-	// create the handlers
+	// create the files handler & gzip middleware
 	filesHandler := handlers.NewFiles(stor, l)
+	mw := handlers.GzipHandler{}
 
 	// create a new serve mux and register the handlers
 	sm := mux.NewRouter()
 
 	// post files
-	// CURL : curl -v localhost:9091/images/1/meowfilename.png -d @meow.png
+	// POST : curl -H 'Content-Type: image/png' localhost:9091/images/1/hansa.png --data-binary @hansa.png
 	// filename regex: {filename:[a-zA-Z]+\\.[a-z]{3}}
 	// problem with FileServer is that it is dumb
-	putR := sm.Methods(http.MethodPost).Subrouter()
-	putR.HandleFunc("/images/{id:[0-9]+}/{filename:[a-zA-Z]+\\.[a-z]{3}}", filesHandler.UploadREST)
-	putR.HandleFunc("/", filesHandler.UploadMultipart)
+	postR := sm.Methods(http.MethodPost).Subrouter()
+	postR.HandleFunc("/images/{id:[0-9]+}/{filename:[a-zA-Z]+\\.[a-z]{3}}", filesHandler.UploadREST)
+	// no curl, use frontend admin section
+	postR.HandleFunc("/", filesHandler.UploadMultipart)
 
 	// get files
-	// CURL : curl -v localhost:9091/images/1/meowfilename.png
+	// GET      : curl -v localhost:9091/images/1/hansa.png -o out1.png
+	// GZip GET : curl -v localhost:9091/images/1/hansa.png --compressed -o out1_zip.png
 	getR := sm.Methods(http.MethodGet).Subrouter()
 	getR.Handle(
 		"/images/{id:[0-9]+}/{filename:[a-zA-Z]+\\.[a-z]{3}}",
 		http.StripPrefix("/images/", http.FileServer(http.Dir(*basePath))),
 	)
+	// gzip middleware
+	getR.Use(mw.GzipMiddleware)
 
 	// CORS
 	cors := gorHandlers.CORS(gorHandlers.AllowedOrigins([]string{"http://localhost:3000"})) // "http://localhost:3000"   *
