@@ -24,7 +24,7 @@ func setupLocal(t *testing.T) (*Local, string, func()) {
 
 	return l, dir, func() {
 		// cleanup function
-		//os.RemoveAll(dir)
+		os.RemoveAll(dir)
 	}
 }
 

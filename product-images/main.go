@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -50,7 +52,7 @@ func main() {
 	sm := mux.NewRouter()
 
 	// post files
-	// POST : curl -H 'Content-Type: image/png' localhost:9091/images/1/hansa.png --data-binary @hansa.png
+	// POST : curl -H 'Content-Type: image/png' localhost:9091/images/01/hansa.png --data-binary @hansa.png
 	// filename regex: {filename:[a-zA-Z]+\\.[a-z]{3}}
 	// problem with FileServer is that it is dumb
 	postR := sm.Methods(http.MethodPost).Subrouter()
@@ -59,8 +61,8 @@ func main() {
 	postR.HandleFunc("/", filesHandler.UploadMultipart)
 
 	// get files
-	// GET      : curl -v localhost:9091/images/1/hansa.png -o out1.png
-	// GZip GET : curl -v localhost:9091/images/1/hansa.png --compressed -o out1_zip.png
+	// GET      : curl -v localhost:9091/images/01/hansa.png -o out.png
+	// GZip GET : curl -v localhost:9091/images/01/hansa.png --compressed -o out_zip.png
 	getR := sm.Methods(http.MethodGet).Subrouter()
 	getR.Handle(
 		"/images/{id:[0-9]+}/{filename:[a-zA-Z]+\\.[a-z]{3}}",
@@ -102,8 +104,37 @@ func main() {
 	sig := <-c
 	l.Info("Shutting down server with", "signal", sig)
 
+	// Empty imagestore for next run
+	l.Info("Emptying ./imagestore")
+	// os.RemoveAll(*basePath + "/")
+	err = RemoveContents(*basePath)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	// gracefully shutdown the server, waiting max 30 seconds for current operations to complete
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	s.Shutdown(ctx)
+}
+
+// RemoveContents : empties all content of a dir
+func RemoveContents(dir string) error {
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	names, err := d.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+	for _, name := range names {
+		err = os.RemoveAll(filepath.Join(dir, name))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
