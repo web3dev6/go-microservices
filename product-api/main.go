@@ -12,8 +12,8 @@ import (
 	"github.com/go-openapi/runtime/middleware"
 	gorHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	"github.com/satoshi-u/go-microservices/data"
-	"github.com/satoshi-u/go-microservices/handlers"
+	"github.com/satoshi-u/go-microservices/product-api/data"
+	"github.com/satoshi-u/go-microservices/product-api/handlers"
 )
 
 // go mod init github.com/satoshi-u/go-microservices

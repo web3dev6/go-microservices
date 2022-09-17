@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
-	"github.com/satoshi-u/go-microservices/data"
+	"github.com/satoshi-u/go-microservices/product-api/data"
 )
 
 // getProductID returns the product ID from the URL

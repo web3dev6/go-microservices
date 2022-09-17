@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/satoshi-u/go-microservices/data"
+	"github.com/satoshi-u/go-microservices/product-api/data"
 )
 
 // Products is an http.handler

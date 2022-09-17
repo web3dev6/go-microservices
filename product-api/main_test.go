@@ -4,9 +4,9 @@ import (
 	"log"
 	"testing"
 
-	"github.com/satoshi-u/go-microservices/sdk/client"
-	"github.com/satoshi-u/go-microservices/sdk/client/products"
-	"github.com/satoshi-u/go-microservices/sdk/models"
+	"github.com/satoshi-u/go-microservices/product-api/sdk/client"
+	"github.com/satoshi-u/go-microservices/product-api/sdk/client/products"
+	"github.com/satoshi-u/go-microservices/product-api/sdk/models"
 )
 
 // To clean test-cache, run : go clean -testcache
