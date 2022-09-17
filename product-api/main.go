@@ -59,6 +59,8 @@ func main() {
 	deleteRouter.HandleFunc("/products/{id}", ph.DeleteProducts)
 
 	// ReDocs- Swagger
+	// make swagger
+	// swagger generate client -f ../swagger.yaml -A product-api
 	opts := middleware.RedocOpts{SpecURL: "/swagger.yaml"}
 	sh := middleware.Redoc(opts, nil)
 	getRouter.HandleFunc("/docs", sh.ServeHTTP)
