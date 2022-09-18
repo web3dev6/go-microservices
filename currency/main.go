@@ -36,6 +36,8 @@ func main() {
 		grpcurl --plaintext localhost:9092 describe pb.Currency.GetRate
 		grpcurl --plaintext localhost:9092 describe pb.RateRequest
 		grpcurl --plaintext localhost:9092 describe pb.RateResponse
+
+		-> when base & destination of type string
 		grpcurl --plaintext -d '{"Base":"GBP", "Destination":"INR"}' localhost:9092 pb.Currency.GetRate
 	*/
 }

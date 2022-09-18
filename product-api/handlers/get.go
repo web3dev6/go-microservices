@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
 
+	"github.com/satoshi-u/go-microservices/currency/pb"
 	"github.com/satoshi-u/go-microservices/product-api/data"
 )
 
@@ -92,6 +94,21 @@ func (p *Products) GetProduct(rw http.ResponseWriter, r *http.Request) {
 	// Marshal product for readable logging and log
 	prodJson, _ := prod.JsonMarshalProduct()
 	p.l.Println("[DEBUG] Product: ", string(prodJson))
+
+	// get exchange rate
+	rr := &pb.RateRequest{
+		Base:        pb.Currencies(pb.Currencies_value["EUR"]),
+		Destination: pb.Currencies(pb.Currencies_value["GBP"]),
+	}
+	resp, err := p.cc.GetRate(context.Background(), rr)
+	if err != nil {
+		p.l.Println("[ERROR] error getting new rate", err)
+		data.ToJSON(&GenericError{Message: err.Error()}, rw)
+		return
+	}
+	p.l.Printf("[DEBUG] Resp: %#v ", resp)
+	p.l.Println("[DEBUG] base price: ", prod.Price, "destination price: ", prod.Price*resp.Rate)
+	prod.Price = prod.Price * resp.Rate
 
 	// write to rw using data.ToJSON
 	err = data.ToJSON(prod, rw)

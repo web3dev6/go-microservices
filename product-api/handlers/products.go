@@ -4,18 +4,20 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/satoshi-u/go-microservices/currency/pb"
 	"github.com/satoshi-u/go-microservices/product-api/data"
 )
 
 // Products is an http.handler
 type Products struct {
-	l *log.Logger
-	v *data.Validation
+	l  *log.Logger
+	v  *data.Validation
+	cc pb.CurrencyClient
 }
 
 // NewProducts returns a new products handler with the given logger & validator
-func NewProducts(l *log.Logger, v *data.Validation) *Products {
-	return &Products{l, v}
+func NewProducts(l *log.Logger, v *data.Validation, cc pb.CurrencyClient) *Products {
+	return &Products{l, v, cc}
 }
 
 // KeyProduct to use as key when putting Product to r.Context()

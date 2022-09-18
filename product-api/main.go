@@ -12,8 +12,11 @@ import (
 	"github.com/go-openapi/runtime/middleware"
 	gorHandlers "github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/satoshi-u/go-microservices/currency/pb"
 	"github.com/satoshi-u/go-microservices/product-api/data"
 	"github.com/satoshi-u/go-microservices/product-api/handlers"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // go mod init github.com/satoshi-u/go-microservices
@@ -29,12 +32,20 @@ import (
 // create swagger.yaml       -> make swagger
 // codegen from swagger.yaml -> swagger generate client -f ../swagger.yaml -A product-api
 func main() {
-	// logger dependency injection
+	// logger
 	l := log.New(os.Stdout, "product-api", log.LstdFlags)
+	// validation
 	v := data.NewValidation()
-	// handler instantiate
+	// client gRPC conn
+	conn, err := grpc.Dial("localhost:9092", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+	cc := pb.NewCurrencyClient(conn)
+	// handler instantiate with constructor dependency injection : logger, validation, conn
+	ph := handlers.NewProducts(l, v, cc)
 	// hh := handlers.NewHello(l)
-	ph := handlers.NewProducts(l, v)
 
 	// new std lib mux : create mux and register handlers
 	// sm := http.NewServeMux()
