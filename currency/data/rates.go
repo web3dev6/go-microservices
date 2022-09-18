@@ -14,14 +14,28 @@ type ExchangeRates struct {
 	rates map[string]float64
 }
 
+// GetRate fetches currency rate for given base & destination currencies
+func (e *ExchangeRates) GetRate(base, dest string) (float64, error) {
+	br, ok := e.rates[base]
+	if !ok {
+		return 0, fmt.Errorf("rate not found for currency %s", base)
+	}
+	dr, ok := e.rates[dest]
+	if !ok {
+		return 0, fmt.Errorf("rate not found for currency %s", dest)
+	}
+	return dr / br, nil
+}
+
+// NewRates instantiates a new ExchangeRates
 func NewRates(l hclog.Logger) (*ExchangeRates, error) {
 	er := &ExchangeRates{log: l, rates: map[string]float64{}}
-	er.GetRates()
+	er.fetchRatesFromECB()
 	return er, nil
 }
 
 // GetRates fetches currency rates against EUR for various currencies from eu-central-bank
-func (e *ExchangeRates) GetRates() error {
+func (e *ExchangeRates) fetchRatesFromECB() error {
 	resp, err := http.DefaultClient.Get("https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml")
 	if err != nil {
 		return nil
@@ -42,6 +56,7 @@ func (e *ExchangeRates) GetRates() error {
 		}
 		e.rates[c.Currency] = r
 	}
+	e.rates["EUR"] = 1
 
 	return nil
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/cloudflare/cfssl/log"
 	"github.com/hashicorp/go-hclog"
+	"github.com/satoshi-u/go-microservices/currency/data"
 	"github.com/satoshi-u/go-microservices/currency/pb"
 	"github.com/satoshi-u/go-microservices/currency/server"
 	"google.golang.org/grpc"
@@ -14,9 +15,18 @@ import (
 
 func main() {
 
-	// Register CurrencyServer with grpcServer & currencyServer instances
+	// grpc server
 	gs := grpc.NewServer()
-	cs := server.NewCurrency(hclog.Default())
+
+	// currency server contains ExchangeRates
+	rates, err := data.NewRates(hclog.Default())
+	if err != nil {
+		log.Error("unable to generate rates", "error", err)
+		os.Exit(1)
+	}
+	cs := server.NewCurrency(hclog.Default(), rates)
+
+	// Register CurrencyServer with grpcServer & currencyServer instances
 	pb.RegisterCurrencyServer(gs, cs)
 
 	// solution | Failed to list services: server does not support the reflection API
