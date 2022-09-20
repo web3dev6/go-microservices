@@ -57,7 +57,9 @@ func (e *ExchangeRates) fetchRatesFromECB() error {
 		e.rates[c.Currency] = r
 	}
 	e.rates["EUR"] = 1
-
+	// for key, element := range e.rates {
+	// 	fmt.Println("Key:", key, "=>", "Element:", element)
+	// }
 	return nil
 }
 

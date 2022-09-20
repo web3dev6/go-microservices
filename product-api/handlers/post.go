@@ -17,7 +17,7 @@ import (
 
 // AddProducts handles POST requests to add new products
 func (p *Products) AddProducts(rw http.ResponseWriter, r *http.Request) {
-	p.l.Println("[DEBUG] Handle Products POST ****** START ******")
+	p.l.Debug("Handle Products POST ****** START ******")
 	// As per swagger docs, header resp type : application/json
 	rw.Header().Add("Content-Type", "application/json")
 
@@ -26,23 +26,27 @@ func (p *Products) AddProducts(rw http.ResponseWriter, r *http.Request) {
 	product := r.Context().Value(KeyProduct{}).(*data.Product)
 
 	// invoke AddProduct func in package data(acts as DAL)
-	product = data.AddProduct(product)
+	product = p.pdb.AddProduct(product)
 
 	// Marshal product for readable logging and log
-	prodJson, _ := product.JsonMarshalProduct()
-	p.l.Println("[DEBUG] Product Added: ", string(prodJson))
+	prodJson, err := product.JsonMarshalProduct()
+	if err != nil {
+		// we should never be here but log the error just incase
+		p.l.Error("Unable to serialize product", "error", err)
+		return
+	}
+	p.l.Debug("Product Added: ", string(prodJson))
 
 	// Encoding with json.NewEncoder to send in ResponseWriter
 	// rw.Write([]byte("Product Added successfully"))
 
 	// encode product to json
-	err := product.ToJSON(rw)
+	err = product.ToJSON(rw)
 	if err != nil {
-		p.l.Println("[ERROR] Unable to encode Product to json")
-		rw.WriteHeader(http.StatusInternalServerError)
-		data.ToJSON(&GenericError{Message: err.Error()}, rw)
+		// we should never be here but log the error just incase
+		p.l.Error("unable to serialize product", "error", err)
 		return
 	}
-	p.l.Println("[DEBUG] Handle Products POST ****** END ******")
-	p.l.Println("------------------------------------------------")
+	p.l.Debug("Handle Products POST ****** END ******")
+	p.l.Debug("------------------------------------------------")
 }

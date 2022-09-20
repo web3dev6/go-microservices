@@ -1,10 +1,14 @@
 package data
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+
+	"github.com/hashicorp/go-hclog"
+	"github.com/satoshi-u/go-microservices/currency/pb"
 )
 
 // Product defines the structure for an API product
@@ -32,7 +36,7 @@ type Product struct {
 	//
 	// required: true
 	// min: 0.01
-	Price float32 `json:"price" validate:"required,gt=0"`
+	Price float64 `json:"price" validate:"required,gt=0"`
 
 	// the SKU for the product
 	//
@@ -73,30 +77,6 @@ func (p *Product) JsonMarshalProduct() ([]byte, error) {
 	return product, nil
 }
 
-// Validate : when adding/updating a product, used in MiddlewareValidateProduct
-// func (p *Product) Validate() error {
-// 	log.Println("Validate:- *Validating Product from r.Body **POST|PUT")
-// 	validate := validator.New()
-// 	validate.RegisterValidation("sku", validateSKU)
-// 	err := validate.Struct(p)
-// 	if err != nil {
-// 		log.Printf("[ERROR] error in validation for product with id{%d}, err: %v", p.ID, err)
-// 		// validationErrors := err.(validator.ValidationErrors)
-// 		// log.Println("validationErrors: ", validationErrors)
-// 		return err
-// 	}
-// 	return nil
-// 	// return validate.Struct(p)
-// }
-
-// validateSKU : custom validation for sku field with regex
-// func validateSKU(fl validator.FieldLevel) bool {
-// 	// sku is of format abc-asdf-1234
-// 	regex := regexp.MustCompile(`[a-z]+-[a-z]+-[0-9]+`)
-// 	matches := regex.FindAllString(fl.Field().String(), -1)
-// 	return len(matches) == 1
-// }
-
 // Products is a collection of Product
 type Products []*Product
 
@@ -127,20 +107,46 @@ func (p *Products) JsonMarshalProducts() ([]byte, error) {
 	return products, nil
 }
 
+type ProductsDB struct {
+	cc  pb.CurrencyClient // not to pass by ref, since it's an interface
+	log hclog.Logger
+}
+
+// New ProductsDB
+func NewProductsDB(cc pb.CurrencyClient, l hclog.Logger) *ProductsDB {
+	return &ProductsDB{cc, l}
+}
+
 // GetProducts returns a list of products
-func GetProducts() Products {
-	return productList
+func (pdb *ProductsDB) GetProducts(currency string) (Products, error) {
+	if currency == "" {
+		return productList, nil
+	}
+
+	rate, err := pdb.fetchRate(currency)
+	if err != nil {
+		pdb.log.Error("unable to get rate", "currency", currency, "error", err)
+		return nil, err
+	}
+
+	pr := Products{}
+	for _, p := range productList {
+		np := *p // np is a copy, not ref
+		np.Price = np.Price * rate
+		pr = append(pr, &np)
+	}
+	return pr, nil
 }
 
 // AddProduct adds a product to list(no err expected for now)
-func AddProduct(p *Product) *Product {
+func (pdb *ProductsDB) AddProduct(p *Product) *Product {
 	p.ID = getNextId()
 	productList = append(productList, p)
 	return p
 }
 
 // UpdateProduct updates an existing product in list
-func UpdateProduct(p *Product) (*Product, error) {
+func (pdb *ProductsDB) UpdateProduct(p *Product) (*Product, error) {
 	i := findIndexByProductID(p.ID)
 	if i == -1 {
 		return nil, ErrProductNotFound
@@ -151,7 +157,7 @@ func UpdateProduct(p *Product) (*Product, error) {
 }
 
 // DeleteProduct deletes a product from the database
-func DeleteProduct(id int) (*Product, error) {
+func (pdb *ProductsDB) DeleteProduct(id int) (*Product, error) {
 	i := findIndexByProductID(id)
 	// log.Printf("[DEBUG] ************************** i : %v", i)
 	if i == -1 {
@@ -177,23 +183,27 @@ var ErrProductNotFound = fmt.Errorf("Product not found")
 // GetProductByID returns a single product which matches the id from the
 // database.
 // If a product is not found this function returns a ProductNotFound error
-func GetProductByID(id int) (*Product, error) {
+func (pdb *ProductsDB) GetProductByID(id int, currency string) (*Product, error) {
 	i := findIndexByProductID(id)
 	if i == -1 {
 		return nil, ErrProductNotFound
 	}
-	return productList[i], nil
-}
 
-// findProduct finds the product with given id
-// func findProduct(id int) (*Product, int, error) {
-// 	for i, p := range productList {
-// 		if p.ID == id {
-// 			return p, i, nil
-// 		}
-// 	}
-// 	return nil, -1, ErrProductNotFound
-// }
+	if currency == "" {
+		return productList[i], nil
+	}
+
+	rate, err := pdb.fetchRate(currency)
+	if err != nil {
+		pdb.log.Error("unable to get rate", "currency", currency, "error", err)
+		return nil, err
+	}
+
+	np := *productList[i] // copy of product, note: product is not a deep object, flat struct
+	np.Price = np.Price * rate
+
+	return &np, nil
+}
 
 // findIndex finds the index of a product in the database
 // returns -1 when no product can be found
@@ -204,6 +214,17 @@ func findIndexByProductID(id int) int {
 		}
 	}
 	return -1
+}
+
+// helper
+func (pdb *ProductsDB) fetchRate(destination string) (float64, error) {
+	// get exchange rate, base and dest currency hard-coded
+	rr := &pb.RateRequest{
+		Base:        pb.Currencies(pb.Currencies_value["EUR"]), // EUR as base always
+		Destination: pb.Currencies(pb.Currencies_value[destination]),
+	}
+	resp, err := pdb.cc.GetRate(context.Background(), rr)
+	return resp.Rate, err
 }
 
 // productList is a hard coded list of products for this

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"log"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/satoshi-u/go-microservices/currency/data"
@@ -25,6 +26,8 @@ func (c *Currency) GetRate(ctx context.Context, rr *pb.RateRequest) (*pb.RateRes
 	if err != nil {
 		return nil, err
 	}
-
+	log.Println("base rate: ", rr.GetBase().String())
+	log.Println("destination rate: ", rr.GetDestination().String())
+	log.Println("rate: ", rate)
 	return &pb.RateResponse{Rate: rate}, nil
 }

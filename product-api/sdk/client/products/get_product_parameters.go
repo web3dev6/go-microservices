@@ -60,6 +60,13 @@ func NewGetProductParamsWithHTTPClient(client *http.Client) *GetProductParams {
 */
 type GetProductParams struct {
 
+	/* Currency.
+
+	     Currency used when returning the price of the product,
+	when none specified, price is returned in EUR.
+	*/
+	Currency *string
+
 	/* ID.
 
 	   The id of the product for which the operation relates
@@ -121,6 +128,17 @@ func (o *GetProductParams) SetHTTPClient(client *http.Client) {
 	o.HTTPClient = client
 }
 
+// WithCurrency adds the currency to the get product params
+func (o *GetProductParams) WithCurrency(currency *string) *GetProductParams {
+	o.SetCurrency(currency)
+	return o
+}
+
+// SetCurrency adds the currency to the get product params
+func (o *GetProductParams) SetCurrency(currency *string) {
+	o.Currency = currency
+}
+
 // WithID adds the id to the get product params
 func (o *GetProductParams) WithID(id int64) *GetProductParams {
 	o.SetID(id)
@@ -139,6 +157,23 @@ func (o *GetProductParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Re
 		return err
 	}
 	var res []error
+
+	if o.Currency != nil {
+
+		// query param Currency
+		var qrCurrency string
+
+		if o.Currency != nil {
+			qrCurrency = *o.Currency
+		}
+		qCurrency := qrCurrency
+		if qCurrency != "" {
+
+			if err := r.SetQueryParam("Currency", qCurrency); err != nil {
+				return err
+			}
+		}
+	}
 
 	// path param id
 	if err := r.SetPathParam("id", swag.FormatInt64(o.ID)); err != nil {

@@ -17,7 +17,7 @@ import (
 
 // UpdateProducts handles PUT requests to update products
 func (p *Products) UpdateProducts(rw http.ResponseWriter, r *http.Request) {
-	p.l.Println("[DEBUG] Handle Products PUT ****** START ******")
+	p.l.Debug("Handle Products PUT ****** START ******")
 	// As per swagger docs, header resp type : application/json
 	rw.Header().Add("Content-Type", "application/json")
 
@@ -26,22 +26,27 @@ func (p *Products) UpdateProducts(rw http.ResponseWriter, r *http.Request) {
 	prod := r.Context().Value(KeyProduct{}).(*data.Product)
 
 	// invoke UpdateProduct func in package data(acts as DAL)
-	product, err := data.UpdateProduct(prod)
+	product, err := p.pdb.UpdateProduct(prod)
 	if err == data.ErrProductNotFound {
-		p.l.Println("[ERROR] Product Not Found for id: ", prod.ID)
+		p.l.Error("Product Not Found for id: ", prod.ID)
 		rw.WriteHeader(http.StatusNotFound)
 		data.ToJSON(&GenericError{Message: err.Error()}, rw)
 		return
 	}
 
 	// Marshal product for readable logging and log
-	prodJson, _ := product.JsonMarshalProduct()
-	p.l.Println("[DEBUG] Product Updated: ", string(prodJson))
+	prodJson, err := product.JsonMarshalProduct()
+	if err != nil {
+		// we should never be here but log the error just incase
+		p.l.Error("Unable to serialize product", "error", err)
+		return
+	}
+	p.l.Debug("Product Updated: ", string(prodJson))
 
 	// write the no content success header
 	rw.WriteHeader(http.StatusNoContent)
 
-	p.l.Println("[DEBUG] Handle Products PUT ****** END ******")
-	p.l.Println("------------------------------------------------")
+	p.l.Debug("Handle Products PUT ****** END ******")
+	p.l.Debug("------------------------------------------------")
 	// todo : id must be required here - validation, not like AddProduct
 }

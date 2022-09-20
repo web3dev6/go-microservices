@@ -1,10 +1,8 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 
-	"github.com/satoshi-u/go-microservices/currency/pb"
 	"github.com/satoshi-u/go-microservices/product-api/data"
 )
 
@@ -18,16 +16,29 @@ import (
 
 // GetProducts handles GET requests and returns all current products
 func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
-	p.l.Println("[DEBUG] Handle Products GET ****** START ******")
+	p.l.Debug("Handle Products GET ****** START ******")
 	// As per swagger docs, header resp type : application/json
 	rw.Header().Add("Content-Type", "application/json")
 
+	// get preferred currency if it exists
+	cur := r.URL.Query().Get("currency")
+
 	// Getting products from data package
-	prods := data.GetProducts()
+	prods, err := p.pdb.GetProducts(cur)
+	if err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		data.ToJSON(&GenericError{Message: err.Error()}, rw)
+		return
+	}
 
 	// Marshal products list for readable logging and log
-	prodsJson, _ := prods.JsonMarshalProducts()
-	p.l.Println("[DEBUG] Products List: ", string(prodsJson))
+	prodsJson, err := prods.JsonMarshalProducts()
+	if err != nil {
+		// we should never be here but log the error just incase
+		p.l.Error("Unable to serialize products", "error", err)
+		return
+	}
+	p.l.Debug("Products List: ", string(prodsJson))
 
 	// Marshall with json.Marshal to send in ResponseWriter
 	// d, err := json.Marshal(lp)
@@ -38,15 +49,14 @@ func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
 	// rw.Write(d)
 
 	// Encoding with json.NewEncoder to send in ResponseWriter
-	err := prods.ToJSON(rw)
+	err = prods.ToJSON(rw)
 	if err != nil {
-		p.l.Println("[ERROR] Unable to encode Products to json")
-		rw.WriteHeader(http.StatusInternalServerError)
-		data.ToJSON(&GenericError{Message: err.Error()}, rw)
+		// we should never be here but log the error just incase
+		p.l.Error("unable to serialize products", "error", err)
 		return
 	}
-	p.l.Println("[DEBUG] Handle Products GET ****** END ******")
-	p.l.Println("------------------------------------------------")
+	p.l.Debug("Handle Products GET ****** END ******")
+	p.l.Debug("------------------------------------------------")
 }
 
 // swagger:route GET /products/{id} products getProduct
@@ -61,63 +71,54 @@ func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
 
 // GetProduct handles GET requests to return a specific product by Id
 func (p *Products) GetProduct(rw http.ResponseWriter, r *http.Request) {
-	p.l.Println("[DEBUG] Handle Products GET ****** START ******")
+	p.l.Debug("Handle Products GET ****** START ******")
 	// As per swagger docs, header resp type : application/json
 	rw.Header().Add("Content-Type", "application/json")
 
 	// get product id from request url
-	p.l.Println("[DEBUG] Getting product Id from url")
+	p.l.Debug("Getting product Id from url")
 	id := getProductID(rw, r)
 	if id == -1 {
 		return
 	}
+	// get preferred currency if it exists
+	cur := r.URL.Query().Get("currency")
 
 	// get product from db
-	p.l.Println("[DEBUG] Getting Product with id: ", id)
-	prod, err := data.GetProductByID(id)
+	p.l.Debug("Getting Product with id: ", id)
+	prod, err := p.pdb.GetProductByID(id, cur)
 
 	// handle types of errors
 	switch err {
 	case nil:
 	case data.ErrProductNotFound:
-		p.l.Println("[ERROR] fetching product", err)
+		p.l.Error("product not found", "error", err)
 		rw.WriteHeader(http.StatusNotFound)
 		data.ToJSON(&GenericError{Message: err.Error()}, rw)
 		return
 	default:
-		p.l.Println("[ERROR] fetching product", err)
+		p.l.Error("unable to fetch product", "error", err)
 		rw.WriteHeader(http.StatusInternalServerError)
 		data.ToJSON(&GenericError{Message: err.Error()}, rw)
 		return
 	}
 
 	// Marshal product for readable logging and log
-	prodJson, _ := prod.JsonMarshalProduct()
-	p.l.Println("[DEBUG] Product: ", string(prodJson))
-
-	// get exchange rate
-	rr := &pb.RateRequest{
-		Base:        pb.Currencies(pb.Currencies_value["EUR"]),
-		Destination: pb.Currencies(pb.Currencies_value["GBP"]),
-	}
-	resp, err := p.cc.GetRate(context.Background(), rr)
+	prodJson, err := prod.JsonMarshalProduct()
 	if err != nil {
-		p.l.Println("[ERROR] error getting new rate", err)
-		data.ToJSON(&GenericError{Message: err.Error()}, rw)
+		// we should never be here but log the error just incase
+		p.l.Error("Unable to serialize product", "error", err)
 		return
 	}
-	p.l.Printf("[DEBUG] Resp: %#v ", resp)
-	p.l.Println("[DEBUG] base price: ", prod.Price, "destination price: ", prod.Price*resp.Rate)
-	prod.Price = prod.Price * resp.Rate
+	p.l.Debug("Product: ", string(prodJson))
 
 	// write to rw using data.ToJSON
 	err = data.ToJSON(prod, rw)
 	if err != nil {
-		p.l.Println("[ERROR] serializing product to response", err)
-		rw.WriteHeader(http.StatusInternalServerError)
-		data.ToJSON(&GenericError{Message: err.Error()}, rw)
+		// we should never be here but log the error just incase
+		p.l.Error("unable to serialize product", "error", err)
 		return
 	}
-	p.l.Println("[DEBUG] Handle Products GET ****** END ******")
-	p.l.Println("------------------------------------------------")
+	p.l.Debug("Handle Products GET ****** END ******")
+	p.l.Debug("------------------------------------------------")
 }
