@@ -40,6 +40,9 @@ func main() {
 	}
 	gs.Serve(listener)
 
+	// go mod init  github.com/satoshi-u/go-microservices/currency
+	// go mod tidy
+	// go run main.go
 	/*
 		grpcurl --plaintext localhost:9092 list
 		grpcurl --plaintext localhost:9092 list pb.Currency

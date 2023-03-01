@@ -49,7 +49,7 @@ func TestClientForAddProducts(t *testing.T) {
 	params := products.NewCreateProductParams()
 	prodName := "mango-shake"
 	prodDesc := "mango & milk"
-	prodPrice := float32(6.50)
+	prodPrice := float64(6.50)
 	prodSKU := "prod-bev-000"
 	params.WithDefaults().SetBody(&models.Product{Name: &prodName, Description: prodDesc, Price: &prodPrice, SKU: &prodSKU})
 	// todo : ensure the product is already not there in CreateProduct (duplicates)
@@ -70,7 +70,7 @@ func TestClientForUpdateProducts(t *testing.T) {
 	prodId := 3
 	prodName := "mango-banana-shake"
 	prodDesc := "mango & banana & milk mix"
-	prodPrice := float32(7.50)
+	prodPrice := float64(7.50)
 	prodSKU := "prod-bev-003"
 	params.WithDefaults().SetBody(&models.Product{ID: int64(prodId), Name: &prodName, Description: prodDesc, Price: &prodPrice, SKU: &prodSKU})
 	prodUpdated, err := c.Products.UpdateProduct(params)

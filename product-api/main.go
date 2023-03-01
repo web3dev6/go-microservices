@@ -20,7 +20,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-// go mod init github.com/satoshi-u/go-microservices
+// go mod init github.com/satoshi-u/go-microservices/product-api
+// go mod tidy
 // go run main.go
 // hello   -> curl -v localhost:9090 -d sarthak
 // GET     -> curl -v localhost:9090/products | jq
@@ -33,7 +34,7 @@ import (
 // DELETE  -> curl -v localhost:9090/products/4 -XDELETE | jq
 
 // create swagger.yaml       -> make swagger
-// codegen from swagger.yaml -> swagger generate client -f ../swagger.yaml -A product-api
+// codegen from swagger.yaml -> mkdir sdk && cd sdk && swagger generate client -f ../swagger.yaml -A product-api
 
 var bindAddress = env.String("BIND_ADDRESS", false, ":9090", "Bind address for the server")
 
@@ -128,3 +129,13 @@ func main() {
 	defer cancel()
 	s.Shutdown(tc)
 }
+
+// R1 - LCX
+// str := "google"
+// m := make(map[rune]int)
+// for _, c := range str {
+// 	m[c]++
+// }
+// for k, v := range m {
+// 	fmt.Println(string(k), v)
+// }

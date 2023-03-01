@@ -19,7 +19,7 @@ import (
 )
 
 var bindAddress = env.String("BIND_ADDRESS", false, ":9091", "Bind address for the server")
-var logLevel = env.String("LOG_LEVEL", false, "debug", "Log output level for the server [debug, info, trace]")
+var logLevelDebug = env.String("LOG_LEVEL", false, "debug", "Log output level for the server [debug, info, trace]")
 var basePath = env.String("BASE_PATH", false, "./imagestore", "Base path to save images")
 
 func main() {
@@ -29,7 +29,7 @@ func main() {
 	l := hclog.New(
 		&hclog.LoggerOptions{
 			Name:  "product-images",
-			Level: hclog.LevelFromString(*logLevel),
+			Level: hclog.LevelFromString(*logLevelDebug),
 		},
 	)
 
@@ -52,7 +52,7 @@ func main() {
 	sm := mux.NewRouter()
 
 	// post files
-	// POST : curl -H 'Content-Type: image/png' localhost:9091/images/01/hansa.png --data-binary @hansa.png
+	// POST : curl -H 'Content-Type: image/png' localhost:9091/images/1/hansa.png --data-binary @hansa.png
 	// filename regex: {filename:[a-zA-Z]+\\.[a-z]{3}}
 	// problem with FileServer is that it is dumb
 	postR := sm.Methods(http.MethodPost).Subrouter()
@@ -61,8 +61,8 @@ func main() {
 	postR.HandleFunc("/", filesHandler.UploadMultipart)
 
 	// get files
-	// GET      : curl -v localhost:9091/images/01/hansa.png -o out.png
-	// GZip GET : curl -v localhost:9091/images/01/hansa.png --compressed -o out_zip.png
+	// GET      : curl -v localhost:9091/images/1/hansa.png -o out.png
+	// GZip GET : curl -v localhost:9091/images/1/hansa.png --compressed -o out_zip.png
 	getR := sm.Methods(http.MethodGet).Subrouter()
 	getR.Handle(
 		"/images/{id:[0-9]+}/{filename:[a-zA-Z]+\\.[a-z]{3}}",

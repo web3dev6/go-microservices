@@ -68,10 +68,10 @@ func (f *Files) UploadMultipart(rw http.ResponseWriter, r *http.Request) {
 	f.saveFile(r.FormValue("id"), mfh.Filename, rw, mf)
 }
 
-func (f *Files) InvalidURI(uri string, rw http.ResponseWriter) {
-	f.log.Error("Invalid path", "path", uri)
-	http.Error(rw, "Invalid file path should be in the format: /[id]/[filepath]", http.StatusBadRequest)
-}
+// func (f *Files) InvalidURI(uri string, rw http.ResponseWriter) {
+// 	f.log.Error("Invalid path", "path", uri)
+// 	http.Error(rw, "Invalid file path should be in the format: /[id]/[filepath]", http.StatusBadRequest)
+// }
 
 // saveFile saves the contents of the request to a file
 func (f *Files) saveFile(id, path string, rw http.ResponseWriter, r io.ReadCloser) {
