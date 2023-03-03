@@ -52,5 +52,10 @@ func main() {
 
 		-> when base & destination of type string
 		grpcurl --plaintext -d '{"Base":"GBP", "Destination":"INR"}' localhost:9092 pb.Currency.GetRate
+
+		-> Currency.SubscribeRates
+		grpcurl --plaintext --msg-template -d @ localhost:9092 pb.Currency.SubscribeRates
+		*** @ means stdin with -d
+				now paste {"Base":"GBP", "Destination":"GBP"} in stdin where you're getting RateResp every 5 sec
 	*/
 }
