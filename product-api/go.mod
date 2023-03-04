@@ -11,10 +11,12 @@ require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
-	github.com/satoshi-u/go-microservices/currency v0.0.0-20220918152139-81ac9167d2e0
+	github.com/satoshi-u/go-microservices/currency v0.0.0-20230304073609-d1b0101ad8f9
 	github.com/stretchr/testify v1.8.0
 	google.golang.org/grpc v1.49.0
 )
+
+require github.com/cloudflare/cfssl v1.6.2 // indirect
 
 require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect

@@ -108,13 +108,41 @@ func (p *Products) JsonMarshalProducts() ([]byte, error) {
 }
 
 type ProductsDB struct {
-	cc  pb.CurrencyClient // not to pass by ref, since it's an interface
-	log hclog.Logger
+	cc          pb.CurrencyClient // not to pass by ref, since it's an interface
+	log         hclog.Logger
+	ratesCached map[string]float64               // cached rates
+	subRClient  pb.Currency_SubscribeRatesClient // client instance for pdb
 }
 
 // New ProductsDB
 func NewProductsDB(cc pb.CurrencyClient, l hclog.Logger) *ProductsDB {
-	return &ProductsDB{cc, l}
+	pdb := &ProductsDB{cc, l, map[string]float64{}, nil}
+	go pdb.handleUpdates() // listens in background for updated rates for current client
+	return pdb
+}
+
+// handleUpdates- subscribed client receives updated Rate Responses
+func (pdb *ProductsDB) handleUpdates() {
+	// instantiate subRClient
+	subRClient, err := pdb.cc.SubscribeRates(context.Background())
+	if err != nil {
+		pdb.log.Error("Unable to subscribe for rates", "error", err)
+		return
+	}
+
+	// save client instance in pdb
+	pdb.subRClient = subRClient
+
+	// listening in loop for rate updates
+	for {
+		rr, err := subRClient.Recv() // @gRPC stream{client <- server}
+		pdb.log.Info("Received updated rate from server", "dest", rr.GetDestination().String())
+		if err != nil {
+			pdb.log.Error("Error receiving message", "error", err)
+			return
+		}
+		pdb.ratesCached[rr.Destination.String()] = rr.Rate
+	}
 }
 
 // GetProducts returns a list of products
@@ -216,14 +244,24 @@ func findIndexByProductID(id int) int {
 	return -1
 }
 
-// helper
+// helper-  get exchange rate for destination currency, base currency is EUR
 func (pdb *ProductsDB) fetchRate(destination string) (float64, error) {
-	// get exchange rate, base and dest currency hard-coded
+	// if cached, return
+	if r, ok := pdb.ratesCached[destination]; ok {
+		return r, nil
+	}
+
+	// or get initial rate first time
 	rr := &pb.RateRequest{
 		Base:        pb.Currencies(pb.Currencies_value["EUR"]), // EUR as base always
 		Destination: pb.Currencies(pb.Currencies_value[destination]),
 	}
 	resp, err := pdb.cc.GetRate(context.Background(), rr)
+	pdb.ratesCached[destination] = resp.Rate // update cache for first time
+
+	// subscribe for updated rates for destination currency
+	pdb.subRClient.Send(rr) // @gRPC stream{client -> server}
+
 	return resp.Rate, err
 }
 

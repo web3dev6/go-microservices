@@ -39,7 +39,7 @@ func (c *Currency) handleUpdates() {
 				if err != nil {
 					c.log.Error("Unable to get updated rates", "base", rr.GetBase(), "destination", rr.GetDestination())
 				}
-				err = client.Send(&pb.RateResponse{Base: rr.GetBase(), Destination: rr.GetDestination(), Rate: r})
+				err = client.Send(&pb.RateResponse{Base: rr.GetBase(), Destination: rr.GetDestination(), Rate: r}) // @gRPC stream{server -> client}
 				if err != nil {
 					c.log.Error("Unable to send updated rates", "base", rr.GetBase(), "destination", rr.GetDestination())
 				}
@@ -66,7 +66,8 @@ func (c *Currency) GetRate(ctx context.Context, rr *pb.RateRequest) (*pb.RateRes
 func (c *Currency) SubscribeRates(src pb.Currency_SubscribeRatesServer) error {
 	// inbound from client - handle client messages
 	for {
-		rr, err := src.Recv() // Recv is a blocking method which returns on client data
+		// Recv is a blocking method which returns on client data
+		rr, err := src.Recv() // @gRPC stream{server <- client}
 		if err == io.EOF {
 			c.log.Info("Client has closed connection")
 			break
@@ -78,7 +79,7 @@ func (c *Currency) SubscribeRates(src pb.Currency_SubscribeRatesServer) error {
 		}
 
 		// time.Sleep(5 * time.Second)
-		c.log.Info("Handle client request", "rate-request", rr, "request_base", rr.GetBase(), "request_dest", rr.GetDestination())
+		c.log.Info("Handle client subscribe request", "rate-request", rr, "request_base", rr.GetBase(), "request_dest", rr.GetDestination())
 
 		rrs, ok := c.subscriptions[src]
 		if !ok {
