@@ -56,6 +56,12 @@ func main() {
 		-> Currency.SubscribeRates
 		grpcurl --plaintext --msg-template -d @ localhost:9092 pb.Currency.SubscribeRates
 		*** @ means stdin with -d
-				now paste {"Base":"GBP", "Destination":"GBP"} in stdin where you're getting RateResp every 5 sec
+				now paste {"Base":"GBP", "Destination":"INR"} in stdin where you're getting RateResp every 5 sec
+
+		[SIMULATED CHANGING RATES]
+		-> grpcurl --plaintext localhost:9092 describe pb.RateResponse
+		*** now paste {"Base":"GBP", "Destination":"INR"} -> subscribed
+		    now paste {"Base":"GBP", "Destination":"EUR"} -> subscribed
+				& so on...
 	*/
 }
