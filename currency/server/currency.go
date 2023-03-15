@@ -41,7 +41,7 @@ func (c *Currency) handleUpdates() {
 				if err != nil {
 					c.log.Error("Unable to get updated rates", "base", rr.GetBase(), "destination", rr.GetDestination())
 				}
-				err = client.Send(&pb.RateResponse{Base: rr.GetBase(), Destination: rr.GetDestination(), Rate: r}) // @gRPC stream{server -> client}
+				err = client.Send(&pb.StreamingRateResponse{Message: &pb.StreamingRateResponse_RateResponse{RateResponse: &pb.RateResponse{Base: rr.GetBase(), Destination: rr.GetDestination(), Rate: r}}}) // @gRPC stream{server -> client}
 				if err != nil {
 					c.log.Error("Unable to send updated rates", "base", rr.GetBase(), "destination", rr.GetDestination())
 				}
@@ -54,7 +54,7 @@ func (c *Currency) handleUpdates() {
 func (c *Currency) GetRate(ctx context.Context, rr *pb.RateRequest) (*pb.RateResponse, error) {
 	c.log.Info("Handle GetRate", "base", rr.GetBase(), "destination", rr.GetDestination())
 
-	// validation to learn - gRPC Error messages in Unary RPCs - at server side
+	// validation - gRPC Error messages in Unary RPCs - at server side
 	if rr.Base == rr.Destination {
 		// return nil, fmt.Errorf("error : Base can not be the same as destination")
 		// return nil, status.Errorf(
@@ -110,6 +110,34 @@ func (c *Currency) SubscribeRates(src pb.Currency_SubscribeRatesServer) error {
 		if !ok {
 			rrs = []*pb.RateRequest{}
 		}
+
+		// check that subscription does not exist - origin @ gRPC Error messages in gRPC bi-directional stream { at server side }
+		var validationError *status.Status
+		for _, v := range rrs {
+			if v.Base == rr.Base && v.Destination == rr.Destination {
+				// subscription exists, return error
+				c.log.Error("Subscription already active", "base", rr.Base.String(), "dest", rr.Destination.String())
+				validationError = status.Newf(
+					codes.AlreadyExists,
+					"Unable to subscribe for currency as subscription already exists for rate",
+				)
+				// add the original request as metadata
+				validationError, err = validationError.WithDetails(rr)
+				if err != nil {
+					c.log.Error("unable to add metadata to error", "error", err)
+					break
+				}
+				break
+			}
+		}
+
+		// if a validation error, return error and continue
+		if validationError != nil {
+			src.Send(&pb.StreamingRateResponse{Message: &pb.StreamingRateResponse_Error{Error: validationError.Proto()}})
+			continue
+		}
+
+		// ok : appends only if no validation error
 		rrs = append(rrs, rr)
 		c.subscriptions[src] = rrs
 	}
