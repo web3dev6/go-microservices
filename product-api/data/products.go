@@ -9,6 +9,8 @@ import (
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/satoshi-u/go-microservices/currency/pb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Product defines the structure for an API product
@@ -257,6 +259,18 @@ func (pdb *ProductsDB) fetchRate(destination string) (float64, error) {
 		Destination: pb.Currencies(pb.Currencies_value[destination]),
 	}
 	resp, err := pdb.cc.GetRate(context.Background(), rr)
+	// gRPC Error messages in Unary RPCs - at client side
+	if err != nil {
+		if s, ok := status.FromError(err); ok {
+			// gRPC err message - yes
+			metaData := s.Details()[0].(*pb.RateRequest)
+			if s.Code() == codes.InvalidArgument {
+				return -1, fmt.Errorf("unable to get rate from currency server { DESTINATION AND BASE CURRENCIES CANNOT BE THE SAME }, base: %s, dest: %s", metaData.Base.String(), metaData.Destination.String())
+			}
+			return -1, fmt.Errorf("unable to get rate from currency server, base: %s, dest: %s", metaData.Base.String(), metaData.Destination.String())
+		}
+		return -1, err
+	}
 	pdb.ratesCached[destination] = resp.Rate // update cache for first time
 
 	// subscribe for updated rates for destination currency

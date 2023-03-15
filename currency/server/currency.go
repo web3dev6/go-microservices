@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/satoshi-u/go-microservices/currency/data"
 	"github.com/satoshi-u/go-microservices/currency/pb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // implements CurrencyServer
@@ -51,6 +53,29 @@ func (c *Currency) handleUpdates() {
 // GetRate - calls the underlying data.ExchangeRates with RateRequest values to get & return a valid RateResponse
 func (c *Currency) GetRate(ctx context.Context, rr *pb.RateRequest) (*pb.RateResponse, error) {
 	c.log.Info("Handle GetRate", "base", rr.GetBase(), "destination", rr.GetDestination())
+
+	// validation to learn - gRPC Error messages in Unary RPCs - at server side
+	if rr.Base == rr.Destination {
+		// return nil, fmt.Errorf("error : Base can not be the same as destination")
+		// return nil, status.Errorf(
+		// 	codes.InvalidArgument,
+		// 	"Base currency %s can not be the same as destination currency %s",
+		// 	rr.Base.String(),
+		// 	rr.Destination.String(),
+		// )
+		err := status.Newf(
+			codes.InvalidArgument,
+			"Base currency %s can not be the same as destination currency %s",
+			rr.Base.String(),
+			rr.Destination.String(),
+		)
+		err, wdErr := err.WithDetails(rr)
+		if wdErr != nil {
+			return nil, wdErr
+		}
+		return nil, err.Err()
+	}
+
 	rate, err := c.rates.GetRate(rr.GetBase().String(), rr.GetDestination().String())
 	if err != nil {
 		return nil, err
