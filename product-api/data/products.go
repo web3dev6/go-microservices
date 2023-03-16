@@ -135,15 +135,30 @@ func (pdb *ProductsDB) handleUpdates() {
 	// save client instance in pdb
 	pdb.subRClient = subRClient
 
-	// listening in loop for rate updates
+	// listening in loop for rate updates,
+	// if duplicate subscription request sent - handle @ gRPC Error messages in gRPC bi-directional stream - { client side }
 	for {
 		rr, err := subRClient.Recv() // @gRPC stream{client <- server}
-		pdb.log.Info("Received updated rate from server", "dest", rr.GetDestination().String())
-		if err != nil {
-			pdb.log.Error("Error receiving message", "error", err)
-			return
+
+		// duplicate subscription error check
+		if grpcError := rr.GetError(); grpcError != nil {
+			// grpcError.Code
+			pdb.log.Error("error subscribing for rates", "error", err)
+			continue
 		}
-		pdb.ratesCached[rr.Destination.String()] = rr.Rate
+
+		// valid rate-response, not any random error
+		if resp := rr.GetRateResponse(); resp != nil {
+			pdb.log.Info("Received updated rate from server", "dest", resp.GetDestination().String())
+
+			if err != nil {
+				pdb.log.Error("Error receiving message", "error", err)
+				return
+			}
+
+			pdb.ratesCached[resp.Destination.String()] = resp.Rate
+		}
+
 	}
 }
 
@@ -248,14 +263,17 @@ func findIndexByProductID(id int) int {
 
 // helper-  get exchange rate for destination currency, base currency is EUR
 func (pdb *ProductsDB) fetchRate(destination string) (float64, error) {
-	// if cached, return
-	if r, ok := pdb.ratesCached[destination]; ok {
-		return r, nil
-	}
+	// if uncommented, duplicate subscription rate request will never go thru, no gRPC bi-directional error will surface
+	/*
+		// if cached, return
+		if r, ok := pdb.ratesCached[destination]; ok {
+			return r, nil
+		}
+	*/
 
 	// or get initial rate first time
 	rr := &pb.RateRequest{
-		Base:        pb.Currencies(pb.Currencies_value["EUR"]), // EUR as base always
+		Base:        pb.Currencies(pb.Currencies_value["EUR"]), // *** EUR as base always
 		Destination: pb.Currencies(pb.Currencies_value[destination]),
 	}
 	resp, err := pdb.cc.GetRate(context.Background(), rr)

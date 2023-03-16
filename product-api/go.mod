@@ -11,9 +11,9 @@ require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
-	github.com/satoshi-u/go-microservices/currency v0.0.0-20230304073609-d1b0101ad8f9
+	github.com/satoshi-u/go-microservices/currency v0.0.0-20230315154703-94ee3d80b7e1
 	github.com/stretchr/testify v1.8.0
-	google.golang.org/grpc v1.49.0
+	google.golang.org/grpc v1.53.0
 )
 
 require github.com/cloudflare/cfssl v1.6.2 // indirect
@@ -33,7 +33,7 @@ require (
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/uuid v1.2.0 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/go-hclog v1.3.0
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
@@ -47,11 +47,11 @@ require (
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.mongodb.org/mongo-driver v1.10.0 // indirect
-	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
-	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6 // indirect
-	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20210510173355-fb37daa5cd7a // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
+	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
+	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
